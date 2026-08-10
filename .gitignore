@@ -1,0 +1,63 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# 环境变量和敏感配置
+.env
+.env.*
+!.env.example
+
+# 测试与覆盖率
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# 类型检查与代码检查缓存
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# 构建产物
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志和临时文件
+*.log
+*.tmp
+*.swp
+*.swo
+
+# 本地数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 项目运行时文件
+uploads/
+temp/
+tmp/

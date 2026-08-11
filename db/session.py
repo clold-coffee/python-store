@@ -1,3 +1,6 @@
+from typing import Generator
+
+from sentry_sdk.session import Session
 from sqlalchemy import create_engine,text
 from sqlalchemy.orm import sessionmaker
 
@@ -20,4 +23,7 @@ SessionLocal = sessionmaker(
     autoflush=False
 )
 
-check_database()
+# 为每个请求提供独立会话，并在请求结束后关闭。"
+def get_db() -> Generator[Session, None, None]:
+   with SessionLocal() as session:
+       yield session

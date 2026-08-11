@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     app_v1_prefix:str='/api/v1'
     database_url: str = ''
 
+    access_token_expire_minutes: int = 30
+    secret_key: str = "dev-only-change-this-to-a-long-random-20260811"
+    jwt_algorithm: Literal["HS256"] = "HS256"
+
     model_config = SettingsConfigDict(
         env_file='.env',
         env_file_encoding='utf-8',

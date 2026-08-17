@@ -15,3 +15,7 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 def get_user_by_id(db: Session, id: int) -> User | None:
     statement = select(User).where(User.id == id)
     return db.scalar(statement)
+
+def get_user_by_username(db: Session, username: str) -> User | None:
+    statement = select(User).where(User.username == username)
+    return db.scalar(statement)

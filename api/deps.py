@@ -12,6 +12,7 @@ from db.session import get_db
 from models import User
 from fastapi import Depends, status, HTTPException
 
+from models.user import UserRole
 from repository.user import get_user_by_id
 
 # oauth2_scheme 是一个 FastAPI 提供的“安全依赖”，它会读取请求头中的 Authorization: Bearer <token>
@@ -36,12 +37,12 @@ def get_current_user(db: DatabaseSession, token: AccessToken) -> User:
     unauthorized = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail='token已过期 或 无token',
-        headers={"WWW-Authenticate": "Bearer"}
     )
 
     try:
         # 解析token，拿到请求体 payload
         payload = decode_token(token)
+
 
         if payload.get('type') != 'access':
             raise unauthorized
@@ -69,3 +70,15 @@ def get_current_user(db: DatabaseSession, token: AccessToken) -> User:
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def require_admin(user: CurrentUser) -> User:
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='当前用户权限不是admin'
+        )
+    return user
+
+
+AdminUser = Annotated[User, Depends(require_admin)]

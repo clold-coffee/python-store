@@ -1,21 +1,19 @@
 from __future__ import annotations
 
-from typing import Annotated
 
-from fastapi.security import OAuth2PasswordRequestForm
 
-from api.routers.health import router
 from core.config import get_settings
 from core.security import create_access_token
 
 from schemas.auth import Token
 
-from schemas.user import User, CreateUser
+from schemas.user import User, CreateUser, LoginRequest
 from api.deps import DatabaseSession
 
-from fastapi import status, HTTPException, Depends
+from fastapi import status, HTTPException, Depends, APIRouter
 
 from service.auth import EmailAlreadyExistsError, register_user, authenticate_user
+router = APIRouter(prefix="/user", tags=["用户相关"])
 
 
 @router.post(
@@ -41,7 +39,7 @@ def register(paylod: CreateUser, db: DatabaseSession) -> User:
     summary='用户登陆'
 )
 def login(
-        from_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+        from_data: LoginRequest,
         db: DatabaseSession
 ) -> Token | None:
     user = authenticate_user(from_data.username, from_data.password, db)

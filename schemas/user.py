@@ -1,5 +1,7 @@
+from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, EmailStr, field_validator, Field, ConfigDict
 
@@ -9,6 +11,7 @@ class CreateUser(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     username: str = Field(min_length=1, max_length=100)
+    role: Optional[UserRole]  = None
 
     @field_validator('username')
     @classmethod
@@ -30,6 +33,9 @@ class User(BaseModel):
     password: str
     is_active: bool
     role: UserRole
-    role: UserRole
     created_at: datetime
     updated_at: datetime
+
+class LoginRequest(BaseModel):
+    password: str
+    username: str

@@ -27,12 +27,15 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(100))
     hashed_password: Mapped[str] = mapped_column(String(255))
     role: Mapped[UserRole] = mapped_column(
-        sqlEnum(UserRole, name="user_role", native_enum= False, length = 20),
+        sqlEnum(
+            UserRole,
+            name="user_role",
+            length=20,
+        ),
         default=UserRole.CUSTOMER,
-        server_default=UserRole.CUSTOMER,
+        server_default=UserRole.CUSTOMER.name,
     )
     password: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true",)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),  default=func.now(),server_default=func.now())
-

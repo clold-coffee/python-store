@@ -2,12 +2,12 @@ from decimal import Decimal
 from typing import List, Annotated, Optional
 from unicodedata import category
 
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, status, Query, Depends
 from fastapi.openapi.utils import status_code_ranges
 from pydantic import ValidationError
 from sqlalchemy import true
 
-from api.deps import DatabaseSession
+from api.deps import DatabaseSession, get_current_user
 from models import Product
 
 from schemas.catagroy import CategoryRead, CategoryCreate, CreateBrand, BrandRead, CategoryUpdate, BrandUpdate, \
@@ -16,7 +16,11 @@ from schemas.catagroy import CategoryRead, CategoryCreate, CreateBrand, BrandRea
 from repository import catagory as CategoryRepository
 from service import catalog as CategoryService
 
-router = APIRouter(prefix='/catelog', tags=['商品目录'])
+router = APIRouter(
+    prefix='/catelog',
+    tags=['商品目录'],
+    # dependencies=[Depends(get_current_user)],
+)
 
 
 def translate_error(exc: Exception) -> HTTPException:

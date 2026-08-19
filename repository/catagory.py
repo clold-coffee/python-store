@@ -9,7 +9,6 @@ from sqlalchemy.orm import selectinload
 
 from models import ProductSku
 from models.catalog import Category, Brand, Product, ProductStatus
-from schemas.catagroy import SkuRead
 
 
 # 根据ID查询 catagory
@@ -68,7 +67,7 @@ def _build_search_conditions(
 ) -> list:
     active_sku = exists(
         select(ProductSku.id).where(
-            ProductSku.product_id == Product.id,
+ProductSku.product_id == Product.id,
             ProductSku.is_active.is_(True)
         )
     )

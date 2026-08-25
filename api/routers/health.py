@@ -5,8 +5,12 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from typing import Literal
+
+from redis import RedisError
+
 from db.session import check_database
 from sqlalchemy.exc import SQLAlchemyError
+from db.redis_client import RedisClient
 
 router = APIRouter(prefix="/health", tags=["检查系统连接"])
 
@@ -21,6 +25,7 @@ class DataBaseHealthResponse(BaseModel):
     database: Literal['connect']
 
 
+# 检查能否访问服务
 @router.get("")
 def health() -> HealthResponse:
     return HealthResponse(
@@ -28,6 +33,7 @@ def health() -> HealthResponse:
     )
 
 
+# 检查数据库连接是否正常
 @router.get("/database")
 def database() -> DataBaseHealthResponse:
     try:
@@ -41,4 +47,25 @@ def database() -> DataBaseHealthResponse:
     return DataBaseHealthResponse(
         status='ok',
         database='connect'
+    )
+
+
+class RedisHealthResponse(BaseModel):
+    status: Literal["ok"]
+    redis: Literal["connected"]
+
+
+# 检查Redis是否连接正常
+@router.get("/redis")
+def redis_health_check(redis: RedisClient) -> RedisHealthResponse:
+    try:
+        redis.ping()
+    except RedisError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc)
+        )
+    return RedisHealthResponse(
+        status='ok',
+        redis='connected'
     )

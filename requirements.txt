@@ -3,7 +3,7 @@ annotated-types==0.7.0
 anyio==4.12.1
 certifi==2026.7.22
 cffi==2.0.0
-click==8.1.8
+click==8.2.1
 cryptography==50.0.0
 dnspython==2.7.0
 email-validator==2.3.0
@@ -22,7 +22,7 @@ PyJWT==2.10.1
 markdown-it-py==3.0.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
-pwdlib==0.2.1
+pwdlib[argon2]==0.2.1
 pycparser==2.23
 pydantic==2.13.4
 pydantic-extra-types==2.11.1
@@ -33,6 +33,7 @@ PyMySQL==1.2.0
 python-dotenv==1.2.1
 python-multipart==0.0.20
 PyYAML==6.0.3
+redis==5.2.1
 rich==15.0.0
 rich-toolkit==0.20.3
 rignore==0.8.1

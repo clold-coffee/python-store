@@ -316,3 +316,10 @@ def merge_carts(
             except WatchError:
                 continue
     raise CartConcurrentUpdateError
+
+
+
+def remove_items(redis: Redis, key: str, sku_ids: list[int]) -> int:
+    if not sku_ids:
+        return 0
+    return int(redis.hdel(key, *(str(sku_id) for sku_id in sku_ids)))

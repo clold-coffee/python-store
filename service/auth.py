@@ -3,11 +3,10 @@ from __future__ import annotations
 from asyncio import exceptions
 from sqlite3 import IntegrityError
 
-from sentry_sdk.session import Session
+from sqlalchemy.orm import Session
 
 from core.security import hash_password, verify_password
 from repository.user import get_user_by_email, get_user_by_username
-from schemas.auth import Token
 from schemas.user import CreateUser
 from models.user import User, UserRole
 from sqlalchemy.exc import IntegrityError

@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     # 单个 SKU 在购物车中允许保存的最大数量。
     cart_max_quantity: int = 99
 
+    order_payment_timeout_minutes: int = 30
+
+    mock_payment_secret: str = "dev-mockpay-signing-secret-change-me"
+    payment_callback_tolerance_seconds: int = 300
+
     model_config = SettingsConfigDict(
         env_file='.env',
         env_file_encoding='utf-8',

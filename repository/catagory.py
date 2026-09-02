@@ -3,9 +3,9 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Optional
 
-from sentry_sdk.session import Session
+
 from sqlalchemy import select, exists, Select, func
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload,Session
 
 from models import ProductSku
 from models.catalog import Category, Brand, Product, ProductStatus

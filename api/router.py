@@ -6,12 +6,16 @@ from api.routers.category import router as cat_router
 from api.routers.car import router as car_router
 from api.routers.address import router as address_router
 from api.routers.order import router as order_router
+from api.routers.payment import router as payment_router
+from api.routers.coupon import router as coupon_router
 
 from fastapi import APIRouter
 
 api_router = APIRouter()
 
+api_router.include_router(coupon_router)
 
+api_router.include_router(payment_router)
 api_router.include_router(order_router)
 
 api_router.include_router(health_router)
@@ -22,5 +26,6 @@ api_router.include_router(cat_router)
 
 api_router.include_router(car_router)
 api_router.include_router(address_router)
+
 
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -11,7 +11,16 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from core.config import get_settings
 from db.base import Base
+
+
+PAYMENT_EXPIRY_MINUTES = get_settings().order_payment_timeout_minutes
+
+
+def default_payment_expires_at() -> datetime:
+    """新订单默认在 30 分钟后过期。"""
+    return datetime.now() + timedelta(minutes=PAYMENT_EXPIRY_MINUTES)
 
 
 class OrderStatus(str, Enum):
@@ -20,6 +29,7 @@ class OrderStatus(str, Enum):
     CANCELED = 'canceled'
     SHIPPED = 'shipped'
     COMPLETED = 'completed'
+    SUCCEEDED = 'succeeded'
 
 
 class Address(Base):
@@ -72,6 +82,11 @@ class Order(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
     canceled_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    payment_expires_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=default_payment_expires_at,
+    )
+    paid_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     items: Mapped[list['OrderItem']] = relationship(
         back_populates='order',

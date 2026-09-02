@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 
-from sentry_sdk.session import Session
+from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from models.user import User

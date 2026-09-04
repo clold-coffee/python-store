@@ -38,6 +38,7 @@ class PaymentStatus(str, enum.Enum):
     SUCCEEDED = 'succeeded'
     FAILED = 'failed'
     CLOSED = 'closed'
+    REFUNDED = 'refunded'
 
 
 class Coupon(Base):

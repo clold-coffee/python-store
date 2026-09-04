@@ -8,10 +8,16 @@ from api.routers.address import router as address_router
 from api.routers.order import router as order_router
 from api.routers.payment import router as payment_router
 from api.routers.coupon import router as coupon_router
+from api.routers.admin_fulfillment import router as admin_fulfillment_router
+from api.routers.fulfillment import router as fulfillment_router
 
 from fastapi import APIRouter
 
 api_router = APIRouter()
+
+api_router.include_router(fulfillment_router)
+
+api_router.include_router(admin_fulfillment_router)
 
 api_router.include_router(coupon_router)
 

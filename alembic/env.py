@@ -24,6 +24,7 @@ import models.user
 import models.catalog
 import models.order
 import models.payment
+import models.fulfillment
 
 target_metadata = Base.metadata
 

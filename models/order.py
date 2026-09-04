@@ -30,6 +30,8 @@ class OrderStatus(str, Enum):
     SHIPPED = 'shipped'
     COMPLETED = 'completed'
     SUCCEEDED = 'succeeded'
+    REFUNDED = "refunded"
+    REFUNDING="refunding"
 
 
 class Address(Base):

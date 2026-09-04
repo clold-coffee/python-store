@@ -17,15 +17,18 @@
   阅读者和编辑器了解函数会返回什么，不会改变程序运行方式。
 """
 
-from datetime import datetime,UTC
+from datetime import datetime, UTC
+from decimal import Decimal, ROUND_HALF_UP
 
 from pymysql import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from models.payment import UserCoupon, Coupon, UserCouponStatus
+from models.payment import UserCoupon, Coupon, UserCouponStatus, DiscountType
 from repository import payment as repository
 from schemas.payment import CouponCreate
+
+CENT = Decimal("0.01")
 
 
 class CouponNotFoundError(Exception):
@@ -39,11 +42,15 @@ class CouponUnavailableError(Exception):
 
     pass
 
+
 class CouponConflictError(Exception):
     """创建优惠券时发生数据冲突，例如优惠券编码已经存在。"""
 
     pass
 
+
+class CouponNotUsableError(Exception):
+    pass
 
 
 def _aware(value: datetime) -> datetime:
@@ -58,7 +65,6 @@ def _aware(value: datetime) -> datetime:
     函数名前的下划线表示它是本文件内部使用的辅助函数。
     """
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
-
 
 
 def claim(db: Session, user_id: int, coupon_id: int) -> UserCoupon:
@@ -126,13 +132,13 @@ def claim(db: Session, user_id: int, coupon_id: int) -> UserCoupon:
         return user_coupon
     except (
             CouponNotFoundError,
-        CouponUnavailableError,
-    ) as e:
+            CouponUnavailableError,
+    ):
         # 业务校验失败时撤销当前事务，再把原异常继续交给接口层处理。
         db.rollback()
         raise
 
-    except IntegrityError :
+    except IntegrityError:
         # 并发请求可能同时通过最前面的重复检查，最终由数据库唯一约束拦截。
         db.rollback()
         # 回滚后重新查询，判断冲突是否由“同一用户重复领取同一张券”造成。
@@ -150,7 +156,6 @@ def claim(db: Session, user_id: int, coupon_id: int) -> UserCoupon:
             raise duplicate
         # 查不到重复记录，说明是其他数据库完整性问题，继续抛出原异常。
         raise
-
 
 
 def list_available(db: Session) -> list[Coupon]:
@@ -184,8 +189,7 @@ def list_mine(db: Session, user_id: int) -> list[UserCoupon]:
     return coupons
 
 
-
-def create_coupon(db: Session, payload:CouponCreate) -> Coupon:
+def create_coupon(db: Session, payload: CouponCreate) -> Coupon:
     """根据接口传入的数据创建优惠券模板。
 
     实际的对象构造和保存由 repository 层完成；服务层负责把数据库完整性错误
@@ -197,3 +201,51 @@ def create_coupon(db: Session, payload:CouponCreate) -> Coupon:
         # 保存失败后必须回滚，否则这个 Session 不能继续执行后续数据库操作。
         db.rollback()
         raise CouponConflictError
+
+
+def release(db: Session, user_coupon_id: int | None) -> None:
+    if user_coupon_id is None:
+        return
+    item = db.get(UserCoupon, user_coupon_id)
+    if item is not None and item.status == UserCouponStatus.USED:
+        if _aware(item.coupon.valid_until) > datetime.now(UTC):
+            item.status = UserCouponStatus.AVAILABLE
+        else:
+            item.status = UserCouponStatus.EXPIRED
+        item.used_at = None
+
+
+def reserve_for_order(
+        db: Session,
+        user_id: int,
+        user_coupon_id: int,
+        original_amount: Decimal,
+) -> tuple[UserCoupon, Decimal]:
+    statement = (
+        select(UserCoupon)
+        .options(joinedload(UserCoupon.coupon))
+        .where(UserCoupon.id == user_coupon_id, UserCoupon.user_id == user_id)
+        .with_for_update()
+    )
+    item = db.scalar(statement)
+    now = datetime.now(UTC)
+    if item is None:
+        raise CouponNotFoundError
+    coupon = item.coupon
+    if (
+            item.status != UserCouponStatus.AVAILABLE
+            or not coupon.is_active
+            or _aware(coupon.valid_from) > now
+            or _aware(coupon.valid_until) <= now
+            or original_amount < coupon.minimum_amount
+    ):
+        raise CouponNotUsableError
+
+    if coupon.discount_type == DiscountType.FIXED:
+        discount = coupon.discount_value
+    else:
+        discount = original_amount * coupon.discount_value / Decimal("100")
+    discount = min(original_amount, discount).quantize(CENT, rounding=ROUND_HALF_UP)
+    item.status = UserCouponStatus.USED
+    item.used_at = now
+    return item, discount

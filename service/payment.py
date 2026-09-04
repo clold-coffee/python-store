@@ -23,10 +23,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core.config import get_settings
+from models import ProductSku
 from models.order import Order, OrderStatus
 from models.payment import Payment, PaymentCallback, PaymentStatus, OrderStatusLog
 from repository import payment as payment_repository
 from schemas.payment import PaymentCallbackResult, MockPaymentCallback
+from service import coupon as coupon_service
 
 
 class StaleCallbackError(Exception):
@@ -378,3 +380,45 @@ def mock_confirm(db:Session, user_id:int, payment_id: int) -> PaymentCallbackRes
 
     # 先为模拟数据签名，再交给正式回调函数验签和处理。
     return process_callback(db, paylod, sign_callback(paylod))
+
+def restore_order_stock(db: Session, order: Order) -> None:
+    sku_ids = sorted((item.sku_id for item in order.items if item.sku_id), key=str)
+    if not sku_ids:
+        return
+    statement = select(ProductSku).where(ProductSku.id.in_(sku_ids)).order_by(ProductSku.id).with_for_update()
+    sku_map = {sku.id: sku for sku in db.scalars(statement)}
+    for item in order.items:
+        if item.sku_id in sku_map:
+            sku_map[item.sku_id].stock += item.quantity
+
+
+
+def close_expired_orders(db: Session, limit: int = 100) -> int:
+    now = datetime.now(UTC)
+    statement = (
+        select(Order)
+        .options(selectinload(Order.items))
+        .where(Order.status == OrderStatus.PENDING_PAYMENT, Order.payment_expires_at <= now)
+        .order_by(Order.id)
+        .limit(limit)
+        .with_for_update(skip_locked=True)
+    )
+    orders = list(db.scalars(statement).unique())
+    for order in orders:
+        restore_order_stock(db, order)
+        coupon_service.release(db, order.user_coupon_id)
+        payment = db.scalar(select(Payment).where(Payment.order_id == order.id).with_for_update())
+        if payment is not None and payment.status == PaymentStatus.PENDING:
+            payment.status = PaymentStatus.CLOSED
+        order.status = OrderStatus.CANCELLED
+        order.cancel_reason = "支付超时自动关闭"
+        order.cancelled_at = now
+        db.add(OrderStatusLog(
+            order_id=order.id,
+            from_status=OrderStatus.PENDING_PAYMENT,
+            to_status=OrderStatus.CANCELLED,
+            operator_type="system_job",
+            reason="payment timeout",
+        ))
+    db.commit()
+    return len(orders)
